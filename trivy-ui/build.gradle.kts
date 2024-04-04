@@ -44,6 +44,18 @@ allOpen {
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
+
+val buildFrontend = tasks.register<Exec>("buildFrontend") {
+    group = "frontend"
+    description = "Runs steps to build frontend like run PostCSS to create TailwindCSS file etc."
+
+    commandLine("npm", "run", "build")
+}
+
+tasks.named("processResources") {
+    dependsOn(buildFrontend)
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.javaParameters = true
 }
