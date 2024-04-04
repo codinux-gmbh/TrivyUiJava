@@ -12,18 +12,27 @@ kotlin {
 
 val quarkusVersion: String by project
 
+val kmpLogVersion: String by project
+val lokiLogAppenderVersion: String by project
+
 dependencies {
     implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:$quarkusVersion"))
 
+    implementation("io.quarkus:quarkus-kotlin")
     implementation("io.quarkus:quarkus-rest")
     implementation("io.quarkus:quarkus-rest-jackson")
     implementation("io.quarkus:quarkus-rest-qute")
+
     implementation("io.quarkus:quarkus-kubernetes-client")
-    implementation("io.quarkus:quarkus-kotlin")
+    implementation("org.bouncycastle:bcpkix-jdk18on")
 
     implementation("io.quarkus:quarkus-smallrye-health")
     implementation("io.quarkus:quarkus-smallrye-openapi")
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
+
+    implementation("net.codinux.log:kmp-log:$kmpLogVersion")
+    implementation("net.codinux.log:quarkus-loki-log-appender:$lokiLogAppenderVersion")
+    implementation("net.codinux.log.kubernetes:codinux-kubernetes-info-retriever:$lokiLogAppenderVersion")
 
 
     testImplementation("io.quarkus:quarkus-junit5")
