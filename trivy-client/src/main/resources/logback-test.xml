@@ -1,0 +1,19 @@
+<configuration>
+
+    <logger name="io.mockk.impl.recording.states" level="INFO" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+    </appender>
+
+    <root level="ALL">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>

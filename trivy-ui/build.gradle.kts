@@ -23,9 +23,6 @@ dependencies {
     implementation("io.quarkus:quarkus-rest-jackson")
     implementation("io.quarkus:quarkus-rest-qute")
 
-    implementation("io.quarkus:quarkus-kubernetes-client")
-    implementation("org.bouncycastle:bcpkix-jdk18on")
-
     implementation("io.quarkus:quarkus-smallrye-health")
     implementation("io.quarkus:quarkus-smallrye-openapi")
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
