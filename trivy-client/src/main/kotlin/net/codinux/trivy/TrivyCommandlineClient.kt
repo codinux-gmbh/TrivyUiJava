@@ -8,7 +8,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import net.codinux.log.logger
 import net.codinux.trivy.report.Report
 import java.io.File
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /**
@@ -71,23 +70,18 @@ class TrivyCommandlineClient : TrivyClient {
                 .command(*command)
                 .start()
 
-            val result = StringBuilder()
             val errors = StringBuilder()
-            thread {
-                process.inputReader().forEachLine { result.appendLine(it) }
-            }
             thread {
                 process.errorReader().forEachLine { errors.appendLine(it) }
             }
 
-//            val result = process.inputReader().readText()
-            process.waitFor(1, TimeUnit.MINUTES)
+            val result = process.inputReader().readText()
 
-            if (result.isNotBlank()) {
-                return Pair(result.toString(), null)
+            return if (result.isNotBlank()) {
+                Pair(result, null)
             } else {
                 log.error { "$errorMessage. Process exit code ${process.exitValue()}, error messages:\n$errors" }
-                return Pair(null, errors.toString())
+                Pair(null, errors.toString())
             }
         } catch (e: Throwable) {
             log.error(e) { errorMessage }
