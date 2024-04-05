@@ -4,7 +4,16 @@ import net.codinux.trivy.report.Report
 
 interface TrivyClient {
 
-    fun scanDockerImage(imageName: String, reportType: ReportType = ReportType.Summary, outputFormat: OutputFormat = OutputFormat.Json): String?
+    companion object {
+        val DefaultScanners = setOf(Scanner.Vulnerabilites, Scanner.Secrets)
+    }
+
+    fun scanDockerImage(
+        imageName: String,
+        reportType: ReportType = ReportType.Summary,
+        outputFormat: OutputFormat = OutputFormat.Json,
+        scanners: Collection<Scanner> = DefaultScanners
+    ): String?
 
     fun deserializeJsonReport(jsonReport: String): Report?
 
