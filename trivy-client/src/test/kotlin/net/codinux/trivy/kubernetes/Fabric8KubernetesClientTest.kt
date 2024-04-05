@@ -9,9 +9,9 @@ class Fabric8KubernetesClientTest {
     private val underTest = Fabric8KubernetesClient(KubeConfigsReader().getKubeConfigs())
 
     @Test
-    fun getAllDockerImagesOfCluster() {
+    fun getAllContainerImagesOfCluster() {
 
-        val result = underTest.getAllDockerImagesOfCluster()
+        val result = underTest.getAllContainerImagesOfCluster()
 
         assertThat(result).isNotEmpty()
     }

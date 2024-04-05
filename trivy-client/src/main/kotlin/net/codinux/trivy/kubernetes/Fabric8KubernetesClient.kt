@@ -17,7 +17,7 @@ class Fabric8KubernetesClient(
     private val clientForContext = ConcurrentHashMap<String, KubernetesClient>()
 
 
-    override fun getAllDockerImagesOfCluster(contextName: String?): Set<DockerImage> {
+    override fun getAllContainerImagesOfCluster(contextName: String?): Set<ContainerImage> {
         val client = getClient(contextName)
 
         val secrets = client.secrets().inAnyNamespace().list().items.orEmpty()
@@ -35,7 +35,7 @@ class Fabric8KubernetesClient(
             }
 
             pod.status.containerStatuses.orEmpty().map { containerStatus ->
-                DockerImage(containerStatus.image, containerStatus.imageID, pullSecrets)
+                ContainerImage(containerStatus.image, containerStatus.imageID, pullSecrets)
             }
         }
 

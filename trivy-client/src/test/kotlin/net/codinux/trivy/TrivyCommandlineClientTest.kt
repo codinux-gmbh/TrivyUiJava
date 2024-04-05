@@ -16,8 +16,8 @@ class TrivyCommandlineClientTest {
 
 
     @Test
-    fun scanDockerImage() {
-        val result = underTest.scanDockerImage("quay.io/keycloak/keycloak:24.0", ReportType.Summary, OutputFormat.Table)
+    fun scanContainerImage() {
+        val result = underTest.scanContainerImage("quay.io/keycloak/keycloak:24.0", ReportType.Summary, OutputFormat.Table)
 
         assertThat(result).isNotNull()
         assertThat(result!!).contains("quay.io/keycloak/keycloak:24.0 (redhat 9.3)")
@@ -26,7 +26,7 @@ class TrivyCommandlineClientTest {
 
     @Test
     fun convertJsonReportToTable() {
-        val jsonReport = underTest.scanDockerImage("quay.io/keycloak/keycloak:24.0", ReportType.Summary, OutputFormat.Json)
+        val jsonReport = underTest.scanContainerImage("quay.io/keycloak/keycloak:24.0", ReportType.Summary, OutputFormat.Json)
 
         val result = underTest.convertJsonReport(OutputFormat.Table, jsonReport!!)
 

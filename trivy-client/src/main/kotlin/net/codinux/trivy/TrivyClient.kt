@@ -8,7 +8,7 @@ interface TrivyClient {
         val DefaultScanners = setOf(Scanner.Vulnerabilites, Scanner.Secrets)
     }
 
-    fun scanDockerImage(
+    fun scanContainerImage(
         imageName: String,
         reportType: ReportType = ReportType.Summary,
         outputFormat: OutputFormat = OutputFormat.Json,
