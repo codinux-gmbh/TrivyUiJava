@@ -1,6 +1,12 @@
 package net.codinux.trivy
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
 import net.codinux.log.logger
+import net.codinux.trivy.report.Report
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -10,6 +16,15 @@ import kotlin.concurrent.thread
  */
 class TrivyCommandlineClient : TrivyClient {
 
+    private val objectMapper = ObjectMapper().apply {
+        this.registerModules(
+            JavaTimeModule(),
+            KotlinModule.Builder().build()
+        )
+
+        this.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+    }
+
     private val log by logger()
 
     override fun scanDockerImage(imageName: String, reportType: ReportType, outputFormat: OutputFormat): String? {
@@ -17,6 +32,13 @@ class TrivyCommandlineClient : TrivyClient {
             "Could not retrieve vulnerabilities of Docker image '$imageName'",
             "trivy", "image", "--format", outputFormat.format, "--report", reportType.type, imageName
         )
+    }
+
+    override fun deserializeJsonReport(jsonReport: String): Report? = try {
+        objectMapper.readValue<Report>(jsonReport)
+    } catch (e: Throwable) {
+        log.error(e) { "Could not deserialize JSON report:\n${jsonReport.take(200)}" }
+        null
     }
 
     override fun convertJsonReport(destinationFormat: OutputFormat, jsonReport: String): String? {
