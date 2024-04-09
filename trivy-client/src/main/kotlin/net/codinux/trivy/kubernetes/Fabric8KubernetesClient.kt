@@ -6,7 +6,7 @@ import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 
 class Fabric8KubernetesClient(
-    private val kubeConfigs: KubeConfigs
+    private val kubeConfigs: KubeConfigs = KubeConfigsReader().getKubeConfigs()
 ) : net.codinux.trivy.kubernetes.KubernetesClient {
 
     companion object {
