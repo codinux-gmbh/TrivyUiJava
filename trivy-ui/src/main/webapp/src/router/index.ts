@@ -1,13 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import KubernetesView from "@/views/KubernetesView.vue";
+import KubernetesImagesView from '@/views/kubernetes/KubernetesImagesView.vue';
+import KubernetesSecretsView from "@/views/kubernetes/KubernetesSecretsView.vue";
+import KubernetesMisconfigurationView from "@/views/kubernetes/KubernetesMisconfigurationView.vue";
+import KubernetesRbacView from "@/views/kubernetes/KubernetesRbacView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      name: 'home',
-      component: KubernetesView
+      path: "/",
+      redirect: "/kubernetes",
+    },
+    {
+      path: "/kubernetes",
+      name: "home",
+      component: KubernetesView,
+      children: [
+        { path: "images", component: KubernetesImagesView },
+        { path: "secrets", component: KubernetesSecretsView },
+        { path: "misconfiguration", component: KubernetesMisconfigurationView },
+        { path: "rbac", component: KubernetesRbacView },
+      ]
     },
     {
       path: '/file-system',
