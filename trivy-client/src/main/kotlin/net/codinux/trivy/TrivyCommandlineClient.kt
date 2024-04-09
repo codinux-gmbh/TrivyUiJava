@@ -1,11 +1,9 @@
 package net.codinux.trivy
 
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.codinux.log.logger
+import net.codinux.trivy.json.DefaultObjectMapper
 import net.codinux.trivy.report.Report
 import java.io.File
 import kotlin.concurrent.thread
@@ -13,16 +11,9 @@ import kotlin.concurrent.thread
 /**
  * This assumes that Trivy is installed and is added to path so that it can be called with 'trivy ...'
  */
-class TrivyCommandlineClient : TrivyClient {
-
-    private val objectMapper = ObjectMapper().apply {
-        this.registerModules(
-            JavaTimeModule(),
-            KotlinModule.Builder().build()
-        )
-
-        this.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-    }
+class TrivyCommandlineClient(
+    private val objectMapper: ObjectMapper = DefaultObjectMapper.mapper
+) : TrivyClient {
 
     private val log by logger()
 
