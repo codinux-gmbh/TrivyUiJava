@@ -1,7 +1,12 @@
+import com.github.gradle.node.npm.task.NpxTask
+
 plugins {
     kotlin("jvm")
     kotlin("plugin.allopen")
+
     id("io.quarkus")
+
+    id("com.github.node-gradle.node") version "7.0.2"
 }
 
 
@@ -57,6 +62,52 @@ val buildFrontend = tasks.register<Exec>("buildFrontend") {
 tasks.named("processResources") {
     dependsOn(buildFrontend)
 }
+
+val buildWebAppTask = tasks.register<NpxTask>("buildWebApp") {
+    dependsOn("yarnInstall")
+    group = "frontend"
+    description = "Transpiles Vue.js components to standard JavaScript and CSS files and copies them to src/resources/META-INF/resources"
+
+    workingDir.set(File("$projectDir/src/main/webapp"))
+
+    command.set("yarn")
+    args.addAll("run", "build")
+}
+
+tasks.named("quarkusBuild") {
+    dependsOn(buildWebAppTask)
+}
+
+val watchWebAppChangesTask = tasks.register("watchWebAppChanges") {
+    dependsOn("yarnInstall")
+    group = "frontend"
+    description = "On each change to Vue.js files transpiles components to standard JavaScript and CSS files and copies them to src/resources/META-INF/resources"
+
+    doFirst {
+        // asynchronously start file watch that transpiles Vue.js files and copies them to src/resources/META-INF/resources
+        this.extra["process"] = ProcessBuilder()
+            .directory(File("$projectDir/src/main/webapp"))
+            .command("yarn", "watch")
+            .start()
+    }
+}
+
+val stopWatchingVueJsChangesTask = tasks.register("stopWatchingVueJsChanges") {
+    group = "frontend"
+    description = "Stops watching changes to Vue.js files"
+
+    doFirst {
+        // stop async file watch process again
+        (watchWebAppChangesTask.get().extra["process"] as? Process)?.destroy()
+    }
+}
+
+tasks.named("quarkusDev") {
+    dependsOn(watchWebAppChangesTask)
+
+    finalizedBy(stopWatchingVueJsChangesTask)
+}
+
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.javaParameters = true
