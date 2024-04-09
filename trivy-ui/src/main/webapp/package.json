@@ -8,7 +8,7 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build --outDir ../resources/META-INF/resources --emptyOutDir",
-    "watch": "vite build --outDir ../resources/META-INF/resources --watch --mode development",
+    "watch": "vite build --outDir ../resources/META-INF/resources --emptyOutDir --watch --mode development",
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {

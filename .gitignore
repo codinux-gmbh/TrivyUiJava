@@ -40,3 +40,6 @@ node_modules/
 
 # Plugin directory
 /.quarkus/cli/plugins/
+
+# auto-generated Vue.js files
+trivy-ui/src/main/resources/META-INF/resources

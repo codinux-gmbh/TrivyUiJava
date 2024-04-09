@@ -52,19 +52,8 @@ allOpen {
 }
 
 
-val buildFrontend = tasks.register<Exec>("buildFrontend") {
-    group = "frontend"
-    description = "Runs steps to build frontend like run PostCSS to create TailwindCSS file etc."
-
-    commandLine("npm", "run", "build")
-}
-
-tasks.named("processResources") {
-    dependsOn(buildFrontend)
-}
-
 val buildWebAppTask = tasks.register<NpxTask>("buildWebApp") {
-    dependsOn("yarnInstall")
+    dependsOn("yarnSetup")
     group = "frontend"
     description = "Transpiles Vue.js components to standard JavaScript and CSS files and copies them to src/resources/META-INF/resources"
 
@@ -79,7 +68,7 @@ tasks.named("quarkusBuild") {
 }
 
 val watchWebAppChangesTask = tasks.register("watchWebAppChanges") {
-    dependsOn("yarnInstall")
+    dependsOn("yarnSetup")
     group = "frontend"
     description = "On each change to Vue.js files transpiles components to standard JavaScript and CSS files and copies them to src/resources/META-INF/resources"
 
