@@ -15,6 +15,9 @@ allprojects {
     group = "net.codinux.trivy"
     version = "1.0.0-SNAPSHOT"
 
+    ext["sourceCodeRepositoryBaseUrl"] = "github.com/codinux/TrivyUI"
+    ext["projectDescription"] = "UI and API that makes the functionality of the security scanner Trivy available for JVM"
+
     repositories {
         mavenCentral()
     }
