@@ -2,6 +2,7 @@ package net.codinux.trivy.kubernetes
 
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import net.codinux.log.collection.toImmutableList
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 
@@ -10,12 +11,23 @@ class Fabric8KubernetesClient(
 ) : net.codinux.trivy.kubernetes.KubernetesClient {
 
     companion object {
-        val NonNullDefaultContextName = "__<default>__"
+        private val NonNullDefaultContextName = "__<default>__"
     }
 
 
     private val clientForContext = ConcurrentHashMap<String, KubernetesClient>()
 
+
+    override val defaultContext: String? = kubeConfigs.defaultContext
+
+    override val contextNames: List<String> = kubeConfigs.contextNames.toImmutableList()
+
+    /**
+     * ConcurrentHashMap throws an error on null keys, so if there's no context name available, e.g. in Kubernetes clusters,
+     * this method returns a unique non-null default value, which cannot be used for real context names.
+     */
+    override fun getNonNullContextName(contextName: String?) =
+        contextName ?: kubeConfigs.defaultContext ?: NonNullDefaultContextName
 
     override fun getAllContainerImagesOfCluster(contextName: String?): Set<ContainerImage> {
         val client = getClient(contextName)
@@ -44,7 +56,7 @@ class Fabric8KubernetesClient(
 
 
     private fun getClient(contextName: String?): KubernetesClient {
-        val contextToSearch = contextName ?: kubeConfigs.defaultContext ?: NonNullDefaultContextName // ConcurrentHashMap throws an error on null keys
+        val contextToSearch = getNonNullContextName(contextName)
 
         return clientForContext.getOrPut(contextToSearch) {
             if (contextToSearch == NonNullDefaultContextName) { // e.g. in Kubernetes clusters there is no context available
