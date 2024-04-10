@@ -13,7 +13,7 @@ interface TrivyClient {
         reportType: ReportType = ReportType.Summary,
         outputFormat: OutputFormat = OutputFormat.Json,
         scanners: Collection<Scanner> = DefaultScanners
-    ): String?
+    ): Pair<String?, String?>
 
     fun deserializeJsonReport(jsonReport: String): Report?
 

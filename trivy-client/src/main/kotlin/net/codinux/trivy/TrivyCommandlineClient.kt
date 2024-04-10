@@ -17,8 +17,8 @@ class TrivyCommandlineClient(
 
     private val log by logger()
 
-    override fun scanContainerImage(imageName: String, reportType: ReportType, outputFormat: OutputFormat, scanners: Collection<Scanner>): String? {
-        return executeCommand(
+    override fun scanContainerImage(imageName: String, reportType: ReportType, outputFormat: OutputFormat, scanners: Collection<Scanner>): Pair<String?, String?> {
+        return executeCommandIncludingErrorOutput(
             "Could not retrieve vulnerabilities of Container image '$imageName'",
             "trivy", "image", "--format", outputFormat.format, "--report", reportType.type, "--scanners", scanners.joinToString(",") { it.scanner }, imageName
         )
