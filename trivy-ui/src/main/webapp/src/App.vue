@@ -35,4 +35,26 @@ import { RouterLink, RouterView } from 'vue-router'
 
 <style scoped>
 
+  nav.main-nav a {
+    display: block;
+
+    min-width: 6rem;
+    margin-top: 1.5rem;
+    margin-right: 1rem;
+
+    text-align: center;
+  }
+
+  nav.main-nav a:hover {
+    color: white;
+  }
+
+  @media (min-width: 1024px) {
+    nav.main-nav a {
+      display: inline-block;
+
+      margin-top: 0;
+    }
+  }
+
 </style>
