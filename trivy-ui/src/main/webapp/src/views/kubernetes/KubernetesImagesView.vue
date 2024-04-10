@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {getCurrentInstance, ref} from "vue";
+import {useRouter} from "vue-router";
 
 interface ScanReport {
   context?: string,
@@ -24,11 +25,17 @@ interface ImageVulnerabilitiesSummary {
 }
 
 const scanReport = ref<ScanReport>()
+const router = useRouter()
 
 function fetchScanReport() {
   fetch(getCurrentInstance()?.appContext.config.globalProperties.baseUrl  + "/api/kubernetes/vulnerabilities")
       .then(res => res.json())
       .then(json => scanReport.value = json)
+}
+
+function showImageScanReport(image: ImageVulnerabilitiesSummary) {
+  const imageId = encodeURIComponent(image.imageId)
+  router.push(`/image/${imageId}/vulnerabilities`)
 }
 
 fetchScanReport()
@@ -64,7 +71,8 @@ fetchScanReport()
         </div>
       </div>
       <div class="table-row-group">
-        <div v-for="image in scanReport.images" class="table-row border-b first:border-t border-zinc-200 even:bg-zinc-100/50 lg:hover:bg-zinc-200">
+        <div v-for="image in scanReport.images" class="table-row border-b first:border-t border-zinc-200 even:bg-zinc-100/50 lg:hover:bg-zinc-200 cursor-pointer"
+             @click="showImageScanReport(image)">
           <div class="table-cell max-w-[20rem] truncate">{{ image.name }}</div>
           <div class="table-cell max-w-[48rem] truncate">{{ image.imageId }}</div>
           <div class="table-cell !text-center">{{ image.countCriticalVulnerabilities }}</div>
@@ -79,21 +87,5 @@ fetchScanReport()
 </template>
 
 <style scoped>
-
-  .table-cell {
-    padding: 0.5rem;
-    padding-right: 0;
-
-    line-height: 1.25rem;
-    text-align: left;
-  }
-  @media screen and (min-width: 640px) {
-    .table-cell {
-      padding: 0.75rem;
-      padding-right: 0;
-
-      line-height: 1.5rem;
-    }
-  }
 
 </style>

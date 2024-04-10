@@ -35,7 +35,12 @@ const router = createRouter({
       path: '/repositories',
       name: 'repositories',
       component: () => import('../views/RepositoriesView.vue')
-    }
+    },
+    {
+      path: '/image/:imageId/vulnerabilities',
+      name: 'imageVulnerabilities',
+      component: () => import('../views/ImageScanReport.vue')
+    },
   ]
 })
 

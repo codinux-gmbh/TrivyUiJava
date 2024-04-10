@@ -61,7 +61,7 @@ class TrivyService(
         images.map { image ->
             thread {
                 val startTime = Instant.now()
-                val (error, reportJson, report) = getVulnerabiliesOfImage(image.imageId)
+                val (error, reportJson, report) = fetchVulnerabilitiesOfImage(image.imageId)
                 reports.add(ScanReport(image, startTime, error, report, reportJson))
 
                 latch.countDown()
@@ -73,7 +73,20 @@ class TrivyService(
         return reports
     }
 
-    fun getVulnerabiliesOfImage(imageId: String): Triple<String?, String?, Report?> {
+
+    fun getVulnerabilitiesOfImage(imageId: String): Pair<Report?, String?> {
+        val cachedScanReport = cachedVulnerabilitiesScanReports.flatMap { it.value }
+            .firstOrNull { it.image.imageId == imageId }
+        if (cachedScanReport != null) {
+            return Pair(cachedScanReport.report, cachedScanReport.error)
+        }
+
+        val (error, _, report) = fetchVulnerabilitiesOfImage(imageId)
+
+        return Pair(report, error)
+    }
+
+    private fun fetchVulnerabilitiesOfImage(imageId: String): Triple<String?, String?, Report?> {
         try {
             val (jsonReport, error) = trivyClient.scanContainerImage(imageId, ReportType.All, OutputFormat.Json, setOf(Scanner.Vulnerabilites))
 
