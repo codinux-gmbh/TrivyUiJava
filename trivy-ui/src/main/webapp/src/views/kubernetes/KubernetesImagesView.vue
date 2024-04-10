@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {getCurrentInstance, ref} from "vue";
 
 interface ScanReport {
   context?: string,
@@ -26,7 +26,7 @@ interface ImageVulnerabilitiesSummary {
 const scanReport = ref<ScanReport>()
 
 function fetchScanReport() {
-  fetch("/api/kubernetes/vulnerabilities")
+  fetch(getCurrentInstance()?.appContext.config.globalProperties.baseUrl  + "/api/kubernetes/vulnerabilities")
       .then(res => res.json())
       .then(json => scanReport.value = json)
 }
