@@ -26,7 +26,7 @@ import { RouterLink, RouterView } from 'vue-router'
     </nav>
   </div>
 
-  <main class="flex-[1_0_auto] bg-zinc-100 lg:pt-4">
+  <main class="flex-[1_0_auto] lg:pt-4">
     <div class="max-w-[1140px] w-[100%] lg:w-[85%] lg:mx-auto">
       <RouterView />
     </div>
