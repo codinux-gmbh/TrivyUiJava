@@ -19,5 +19,8 @@ plugins {
 }
 
 
+rootProject.name = "TrivyUI"
+
+
 include("trivy-client")
 include("trivy-ui")
