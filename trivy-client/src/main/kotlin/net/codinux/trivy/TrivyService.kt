@@ -10,20 +10,32 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.concurrent.timer
 
 class TrivyService(
     private val trivyClient: TrivyClient = TrivyCommandlineClient(),
     private val kubernetesClient: KubernetesClient = Fabric8KubernetesClient()
 ) {
 
-    private var cachedVulnerabilitiesScanReports = ConcurrentHashMap<String, List<ScanReport>>()
+    private val cachedVulnerabilitiesScanReports = ConcurrentHashMap<String, List<ScanReport>>()
+
+    private val scanKubernetesClustersTimer = timer(period = 12 * 60 * 60 * 1000L) {
+        retrieveImageVulnerabilitiesOfAllKubernetesClusters()
+    }
 
     private val log by logger()
 
-    init {
+
+    private fun retrieveImageVulnerabilitiesOfAllKubernetesClusters() {
+        log.info { "Retrieving image vulnerabilities of all Kubernetes clusters ..." }
+
         kubernetesClient.contextNames.forEach { context ->
             thread {
-                this.cachedVulnerabilitiesScanReports[context] = retrieveAllImageVulnerabilitiesOfKubernetesCluster(context)
+                try {
+                    this.cachedVulnerabilitiesScanReports[context] = retrieveAllImageVulnerabilitiesOfKubernetesCluster(context)
+                } catch (e: Throwable) {
+                    log.error(e) { "Could not retrieve image vulnerabilities of cluster '$context'" }
+                }
             }
         }
     }
