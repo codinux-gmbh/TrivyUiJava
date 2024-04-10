@@ -35,7 +35,7 @@ function fetchScanReport() {
 
 function showImageScanReport(image: ImageVulnerabilitiesSummary) {
   const imageId = encodeURIComponent(image.imageId)
-  router.push(`/image/${imageId}/vulnerabilities`)
+  router.push(`/images/${imageId}/vulnerabilities`)
 }
 
 fetchScanReport()

@@ -24,22 +24,22 @@ const router = createRouter({
       ]
     },
     {
-      path: '/file-system',
-      name: 'file-system',
+      path: "/images",
+      name: "images",
       // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
+      // this generates a separate chunk (Images.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
-      component: () => import('../views/FileSystemView.vue')
+      component: () => import("../views/ImagesView.vue")
     },
     {
-      path: '/repositories',
-      name: 'repositories',
-      component: () => import('../views/RepositoriesView.vue')
+      path: "/images/:imageId/vulnerabilities",
+      name: "imageVulnerabilities",
+      component: () => import("../views/ImageScanReport.vue")
     },
     {
-      path: '/image/:imageId/vulnerabilities',
-      name: 'imageVulnerabilities',
-      component: () => import('../views/ImageScanReport.vue')
+      path: "/repositories",
+      name: "repositories",
+      component: () => import("../views/RepositoriesView.vue")
     },
   ]
 })

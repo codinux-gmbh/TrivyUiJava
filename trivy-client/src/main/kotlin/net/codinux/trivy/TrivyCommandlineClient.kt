@@ -71,7 +71,7 @@ class TrivyCommandlineClient(
             return if (result.isNotBlank()) {
                 Pair(result, null)
             } else {
-                log.error { "$errorMessage. Process exit code ${process.exitValue()}, error messages:\n$errors" }
+                log.error { "$errorMessage. Error messages:\n$errors" }
                 Pair(null, errors.toString())
             }
         } catch (e: Throwable) {

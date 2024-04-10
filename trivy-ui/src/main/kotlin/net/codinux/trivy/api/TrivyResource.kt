@@ -30,8 +30,6 @@ class TrivyResource(
     @GET
     @Path("/image/{imageId}/vulnerabilities")
     fun getImageVulnerabilities(@RestPath("imageId") imageId: String): ReportResponse {
-        println("Getting vulnerabilities of image: $imageId ...") // TODO: remove again
-
         val (report, error) = service.getVulnerabilitiesOfImage(imageId)
 
         return ReportResponse(error, report)

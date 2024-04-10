@@ -18,7 +18,7 @@ import { RouterLink, RouterView } from 'vue-router'
         <div class="text-xl lg:flex-grow">
           <nav class="main-nav">
             <RouterLink to="/">Kubernetes</RouterLink>
-            <RouterLink to="/file-system">File system</RouterLink>
+            <RouterLink to="/images">Images</RouterLink>
             <RouterLink to="/repositories">Repositories</RouterLink>
           </nav>
         </div>
