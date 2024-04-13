@@ -17,7 +17,7 @@ class TrivyService(
     private val kubernetesClient: KubernetesClient = Fabric8KubernetesClient()
 ) {
 
-    private val cachedVulnerabilitiesScanReports = ConcurrentHashMap<String, List<ScanReport>>()
+    private val cachedClusterVulnerabilitiesScanReports = ConcurrentHashMap<String, List<ScanReport>>()
 
     private val scanKubernetesClustersTimer = timer(period = 12 * 60 * 60 * 1000L) {
         retrieveImageVulnerabilitiesOfAllKubernetesClusters()
@@ -32,7 +32,7 @@ class TrivyService(
         kubernetesClient.contextNames.forEach { context ->
             thread {
                 try {
-                    this.cachedVulnerabilitiesScanReports[context] = retrieveAllImageVulnerabilitiesOfKubernetesCluster(context)
+                    this.cachedClusterVulnerabilitiesScanReports[context] = retrieveAllImageVulnerabilitiesOfKubernetesCluster(context)
                 } catch (e: Throwable) {
                     log.error(e) { "Could not retrieve image vulnerabilities of cluster '$context'" }
                 }
@@ -43,12 +43,12 @@ class TrivyService(
     fun getAllImageVulnerabilitiesOfKubernetesCluster(contextName: String? = null): List<ScanReport> {
         val contextNameKey = kubernetesClient.getNonNullContextName(contextName)
 
-        cachedVulnerabilitiesScanReports[contextNameKey]?.let { scanReports ->
+        cachedClusterVulnerabilitiesScanReports[contextNameKey]?.let { scanReports ->
             return scanReports
         }
 
         return retrieveAllImageVulnerabilitiesOfKubernetesCluster(contextName ?: kubernetesClient.defaultContext).also {
-            this.cachedVulnerabilitiesScanReports[contextNameKey] = it
+            this.cachedClusterVulnerabilitiesScanReports[contextNameKey] = it
         }
     }
 
@@ -75,7 +75,7 @@ class TrivyService(
 
 
     fun getVulnerabilitiesOfImage(imageId: String): Pair<Report?, String?> {
-        val cachedScanReport = cachedVulnerabilitiesScanReports.flatMap { it.value }
+        val cachedScanReport = cachedClusterVulnerabilitiesScanReports.flatMap { it.value }
             .firstOrNull { it.image.imageId == imageId }
         if (cachedScanReport != null) {
             return Pair(cachedScanReport.report, cachedScanReport.error)
