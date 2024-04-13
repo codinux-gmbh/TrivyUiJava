@@ -1,9 +1,14 @@
 package net.codinux.trivy
 
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.codinux.log.logger
+import net.codinux.trivy.json.DefaultObjectMapper
+import net.codinux.trivy.kubernetes.ContainerImage
 import net.codinux.trivy.kubernetes.Fabric8KubernetesClient
 import net.codinux.trivy.kubernetes.KubernetesClient
 import net.codinux.trivy.report.Report
+import java.io.File
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -14,8 +19,26 @@ import kotlin.concurrent.timer
 
 class TrivyService(
     private val trivyClient: TrivyClient = TrivyCommandlineClient(),
-    private val kubernetesClient: KubernetesClient = Fabric8KubernetesClient()
+    private val kubernetesClient: KubernetesClient = Fabric8KubernetesClient(),
+    private val dataDirectory: File = getDataDirInTempDirectory(),
+    private val objectMapper: ObjectMapper = DefaultObjectMapper.mapper
 ) {
+
+    companion object {
+
+        fun getDataDirInTempDirectory(): File {
+            val tmpFile = File.createTempFile("trivy-ui", "tmp")
+            val tmpDir = tmpFile.parentFile
+            tmpFile.delete()
+
+            val dataDir = File(tmpDir, "trivy-ui")
+            dataDir.mkdirs()
+
+            return dataDir
+        }
+
+    }
+
 
     private val cachedClusterVulnerabilitiesScanReports = ConcurrentHashMap<String, List<ScanReport>>()
 
@@ -24,6 +47,10 @@ class TrivyService(
     }
 
     private val log by logger()
+
+    init {
+        retrievePersistedState()
+    }
 
 
     private fun retrieveImageVulnerabilitiesOfAllKubernetesClusters() {
@@ -70,6 +97,8 @@ class TrivyService(
 
         latch.await(10, TimeUnit.MINUTES)
 
+        persistClusterVulnerabilitiesState(contextName, reports)
+
         return reports
     }
 
@@ -103,5 +132,43 @@ class TrivyService(
             return Triple(e.message, null, null)
         }
     }
+
+
+    private fun retrievePersistedState() {
+        try {
+            val objectMapper = objectMapper.copy().apply {
+                // most properties of Trivy Report start with an upper case letter, but due to the default naming strategy of Jackson
+                // during serialization all properties get renamed to start with a lower case letter. So to deserialize Trivy Report
+                // that has been serialized with Jackson we have to make property name detection case insensitive
+                // TODO: add @JsonProperty to all properties that start with an upper case letter
+                this.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+            }
+            getKubernetesStateDirectory().list()?.forEach { contextName ->
+                val reports = objectMapper.readerForListOf(ScanReport::class.java).readValue<List<ScanReport>>(getClusterVulnerabilitiesStateFile(contextName))
+                this.cachedClusterVulnerabilitiesScanReports[contextName] = reports
+            }
+        } catch (e: Throwable) {
+            log.error(e) { "Could not deserialize persisted vulnerabilities scan report" }
+        }
+    }
+
+    private fun persistClusterVulnerabilitiesState(contextName: String?, reports: List<ScanReport>) {
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(getClusterVulnerabilitiesStateFile(contextName), reports)
+        } catch (e: Throwable) {
+            log.error(e) { "Could not persist vulnerabilities state of cluster '$contextName'" }
+        }
+    }
+
+    private fun getClusterVulnerabilitiesStateFile(contextName: String?) =
+        File(getClusterStateDirectory(contextName), "vulnerabilities.json")
+
+    private fun getClusterStateDirectory(contextName: String?) =
+        File(getKubernetesStateDirectory(), kubernetesClient.getNonNullContextName(contextName)).also {
+            it.mkdirs()
+        }
+
+    private fun getKubernetesStateDirectory() =
+        File(dataDirectory, "kubernetes")
 
 }
