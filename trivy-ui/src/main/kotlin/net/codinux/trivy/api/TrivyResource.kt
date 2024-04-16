@@ -3,6 +3,7 @@ package net.codinux.trivy.api
 import io.quarkus.runtime.Startup
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.Path
+import jakarta.ws.rs.core.Response
 import net.codinux.trivy.TrivyService
 import net.codinux.trivy.api.dto.ReportResponse
 import net.codinux.trivy.api.dto.VulnerabilitiesScanReport
@@ -24,7 +25,7 @@ class TrivyResource(
         val start = Instant.now()
         val (report, error) = service.getKubernetesClusterVulnerabilities(context)
 
-        return mapper.mapToScanReport(context, start, report, error)
+        return mapper.mapToVulnerabilitiesScanReport(context, start, report, error)
     }
 
     @GET
@@ -33,16 +34,20 @@ class TrivyResource(
         val start = Instant.now()
         val (report, error) = service.getKubernetesClusterExposedSecrets(context)
 
-        return mapper.mapToScanReport(context, start, report, error)
+        return mapper.mapToVulnerabilitiesScanReport(context, start, report, error)
     }
 
     @GET
     @Path("/kubernetes/rbac")
-    fun getKubernetesClusterRbacMisconfiguration(@RestQuery("context") context: String? = null): VulnerabilitiesScanReport {
+    fun getKubernetesClusterRbacMisconfiguration(@RestQuery("context") context: String? = null): Response {
         val start = Instant.now()
         val (report, error) = service.getKubernetesClusterRbacMisconfiguration(context)
 
-        return mapper.mapToScanReport(context, start, report, error)
+        if (report != null) {
+            return Response.ok(mapper.mapToMisconfigurationScanReport(context, start, report)).build()
+        }
+
+        return Response.status(Response.Status.BAD_GATEWAY.statusCode, error).build()
     }
 
     @GET

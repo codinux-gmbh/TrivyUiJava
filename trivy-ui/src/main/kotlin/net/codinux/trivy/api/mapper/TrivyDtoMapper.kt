@@ -1,6 +1,8 @@
 package net.codinux.trivy.api.mapper
 
 import jakarta.inject.Singleton
+import net.codinux.trivy.api.dto.MisconfigurationScanReport
+import net.codinux.trivy.api.dto.ResourceMisconfigurations
 import net.codinux.trivy.api.dto.ResourceVulnerabilitiesSummary
 import net.codinux.trivy.api.dto.VulnerabilitiesScanReport
 import net.codinux.trivy.report.*
@@ -9,7 +11,7 @@ import java.time.Instant
 @Singleton
 class TrivyDtoMapper {
 
-    fun mapToScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport?, error: String?): VulnerabilitiesScanReport {
+    fun mapToVulnerabilitiesScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport?, error: String?): VulnerabilitiesScanReport {
         return if (report == null) {
             VulnerabilitiesScanReport(context, startTime, 0, 0, 0, 0, 0, emptyList(), error)
         } else {
@@ -46,5 +48,21 @@ class TrivyDtoMapper {
     private fun countSeverity(results: List<Result>?, severity: Severity): Int =
         results?.sumOf { it.Vulnerabilities.count { it.Severity == severity.severity } }
             ?: 0
+
+
+    fun mapToMisconfigurationScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport): MisconfigurationScanReport {
+        val resourceMisconfigurations = report.Resources.flatMap { resource ->
+            resource.Results.filter { it.MisconfSummary != null }.map { result ->
+                val summary = result.MisconfSummary!!
+
+                ResourceMisconfigurations(resource.Namespace, resource.Kind, resource.Name, summary.Successes, summary.Failures, summary.Exceptions)
+            }
+        }
+
+        return MisconfigurationScanReport(context, resourceMisconfigurations.sumOf { it.successes },
+            resourceMisconfigurations.sumOf { it.failures }, resourceMisconfigurations.sumOf { it.exceptions },
+            resourceMisconfigurations.sortedWith(compareBy( { it.namespace }, { it.kind }, { it.name } )) // TODO: it's not the backend's job to sort resources
+        )
+    }
 
 }
