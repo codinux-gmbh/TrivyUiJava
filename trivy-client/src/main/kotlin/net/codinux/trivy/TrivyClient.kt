@@ -23,7 +23,7 @@ interface TrivyClient {
         reportType: ReportType = ReportType.Summary,
         outputFormat: OutputFormat = OutputFormat.Json,
         listAllPackages: Boolean = false,
-        scanners: Collection<KubernetesClusterScanner> = setOf(KubernetesClusterScanner.Vulnerabilities)
+        scanners: Collection<KubernetesScanner> = setOf(KubernetesScanner.Vulnerabilities)
     ): Triple<String?, KubernetesClusterReport?, String?>
 
 

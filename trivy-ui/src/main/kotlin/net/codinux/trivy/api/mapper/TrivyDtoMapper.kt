@@ -2,20 +2,20 @@ package net.codinux.trivy.api.mapper
 
 import jakarta.inject.Singleton
 import net.codinux.trivy.api.dto.ResourceVulnerabilitiesSummary
-import net.codinux.trivy.api.dto.ScanReport
+import net.codinux.trivy.api.dto.VulnerabilitiesScanReport
 import net.codinux.trivy.report.*
 import java.time.Instant
 
 @Singleton
 class TrivyDtoMapper {
 
-    fun mapToScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport?, error: String?): ScanReport {
+    fun mapToScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport?, error: String?): VulnerabilitiesScanReport {
         return if (report == null) {
-            ScanReport(context, startTime, 0, 0, 0, 0, 0, emptyList(), error)
+            VulnerabilitiesScanReport(context, startTime, 0, 0, 0, 0, 0, emptyList(), error)
         } else {
             val results = report.Resources.flatMap { it.Results }
 
-            return ScanReport(context, startTime, results.size, countSeverity(results, Severity.Critical),
+            return VulnerabilitiesScanReport(context, startTime, results.size, countSeverity(results, Severity.Critical),
                 countSeverity(results, Severity.High), countSeverity(results, Severity.Medium), countSeverity(results, Severity.Low),
                 report.Resources.map { mapToResourceVulnerabilitiesSummary(it) }.sortedWith(compareBy( { it.namespace }, { it.kind }, { it.name } )) // TODO: it's not the backend's job to sort resources
             )

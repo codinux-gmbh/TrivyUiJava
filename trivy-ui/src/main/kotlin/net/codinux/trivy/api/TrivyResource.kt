@@ -5,7 +5,7 @@ import jakarta.ws.rs.GET
 import jakarta.ws.rs.Path
 import net.codinux.trivy.TrivyService
 import net.codinux.trivy.api.dto.ReportResponse
-import net.codinux.trivy.api.dto.ScanReport
+import net.codinux.trivy.api.dto.VulnerabilitiesScanReport
 import net.codinux.trivy.api.mapper.TrivyDtoMapper
 import org.jboss.resteasy.reactive.RestPath
 import org.jboss.resteasy.reactive.RestQuery
@@ -20,9 +20,27 @@ class TrivyResource(
 
     @GET
     @Path("/kubernetes/vulnerabilities")
-    fun getKubernetesClusterVulnerabilities(@RestQuery("context") context: String? = null): ScanReport {
+    fun getKubernetesClusterVulnerabilities(@RestQuery("context") context: String? = null): VulnerabilitiesScanReport {
         val start = Instant.now()
         val (report, error) = service.getKubernetesClusterVulnerabilities(context)
+
+        return mapper.mapToScanReport(context, start, report, error)
+    }
+
+    @GET
+    @Path("/kubernetes/secrets")
+    fun getKubernetesClusterExposedSecrets(@RestQuery("context") context: String? = null): VulnerabilitiesScanReport {
+        val start = Instant.now()
+        val (report, error) = service.getKubernetesClusterExposedSecrets(context)
+
+        return mapper.mapToScanReport(context, start, report, error)
+    }
+
+    @GET
+    @Path("/kubernetes/rbac")
+    fun getKubernetesClusterRbacMisconfiguration(@RestQuery("context") context: String? = null): VulnerabilitiesScanReport {
+        val start = Instant.now()
+        val (report, error) = service.getKubernetesClusterRbacMisconfiguration(context)
 
         return mapper.mapToScanReport(context, start, report, error)
     }

@@ -42,9 +42,7 @@ class TrivyCommandlineClient(
 
     // Misconfiguration Flags:
     // --include-non-failures              include successes and exceptions, available with '--scanners misconfig'
-    override fun scanKubernetesCluster(contextName: String?, namespace: String?, scanAllNamespaces: Boolean, reportType: ReportType, outputFormat: OutputFormat, listAllPackages: Boolean, scanners: Collection<KubernetesClusterScanner>): Triple<String?, KubernetesClusterReport?, String?> {
-        "trivy k8s cluster --scanners vuln --report all -f json --output trivy-client/src/main/doc/responses/staging_cluster_vulnerabilities.json"
-
+    override fun scanKubernetesCluster(contextName: String?, namespace: String?, scanAllNamespaces: Boolean, reportType: ReportType, outputFormat: OutputFormat, listAllPackages: Boolean, scanners: Collection<KubernetesScanner>): Triple<String?, KubernetesClusterReport?, String?> {
         val command = buildList {
             addAll(listOf("trivy", "kubernetes", "cluster", "--format", outputFormat.format, "--report", reportType.type, "--scanners", scanners.joinToString(",") { it.scanner }, "--timeout", "60m"))
 

@@ -2,7 +2,7 @@ package net.codinux.trivy.api.dto
 
 import java.time.Instant
 
-data class ScanReport(
+data class VulnerabilitiesScanReport(
     val context: String?,
     val scanStart: Instant,
     val countScannedImages: Int,

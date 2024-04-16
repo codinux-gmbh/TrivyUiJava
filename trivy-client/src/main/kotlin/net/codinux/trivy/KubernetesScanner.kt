@@ -1,6 +1,6 @@
 package net.codinux.trivy
 
-enum class KubernetesClusterScanner(val scanner: String) {
+enum class KubernetesScanner(val scanner: String) {
     Vulnerabilities("vuln"),
     Misconfiguration("misconfig"),
     Secrets("secret"),

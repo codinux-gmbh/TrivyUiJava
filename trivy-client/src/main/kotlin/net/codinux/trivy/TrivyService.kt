@@ -38,11 +38,10 @@ class TrivyService(
     }
 
 
-    // TODO: convert to: Map<String, Map<KubernetesClusterScanner, KubernetesClusterReport>>
-    private val cachedClusterVulnerabilitiesScanReports = ConcurrentHashMap<String, KubernetesClusterReport>()
+    private val cachedClusterScanReports = ConcurrentHashMap<String, MutableMap<KubernetesScanner, KubernetesClusterReport>>()
 
     private val scanKubernetesClustersTimer = timer(period = 12 * 60 * 60 * 1000L) {
-        retrieveImageVulnerabilitiesOfAllKubernetesClusters()
+        scanAllKubernetesClusters()
     }
 
     private val log by logger()
@@ -52,40 +51,54 @@ class TrivyService(
     }
 
 
-    private fun retrieveImageVulnerabilitiesOfAllKubernetesClusters() {
-        log.info { "Retrieving image vulnerabilities of all Kubernetes clusters ..." }
+    private fun scanAllKubernetesClusters() {
+        log.info { "Scanning all Kubernetes clusters ..." }
 
         kubernetesClient.contextNames.forEach { context ->
             thread {
                 try {
-                    scanKubernetesCluster(context, KubernetesClusterScanner.Vulnerabilities)
+                    scanKubernetesCluster(context, KubernetesScanner.Vulnerabilities)
+                    scanKubernetesCluster(context, KubernetesScanner.RBAC)
+                    scanKubernetesCluster(context, KubernetesScanner.Secrets)
+                    scanKubernetesCluster(context, KubernetesScanner.Misconfiguration)
                 } catch (e: Throwable) {
-                    log.error(e) { "Could not retrieve image vulnerabilities of cluster '$context'" }
+                    log.error(e) { "Could not scan cluster '$context'" }
                 }
             }
         }
     }
 
-    fun getKubernetesClusterVulnerabilities(contextName: String? = null): Pair<KubernetesClusterReport?, String?> {
+
+    fun getKubernetesClusterVulnerabilities(contextName: String? = null) =
+        getKubernetesClusterScanReport(contextName, KubernetesScanner.Vulnerabilities)
+
+    fun getKubernetesClusterMisconfiguration(contextName: String? = null) =
+        getKubernetesClusterScanReport(contextName, KubernetesScanner.Misconfiguration)
+
+    fun getKubernetesClusterExposedSecrets(contextName: String? = null) =
+        getKubernetesClusterScanReport(contextName, KubernetesScanner.Secrets)
+
+    fun getKubernetesClusterRbacMisconfiguration(contextName: String? = null) =
+        getKubernetesClusterScanReport(contextName, KubernetesScanner.RBAC)
+
+    private fun getKubernetesClusterScanReport(contextName: String?, scanner: KubernetesScanner): Pair<KubernetesClusterReport?, String?> {
         val contextNameKey = kubernetesClient.getNonNullContextName(contextName)
 
-        cachedClusterVulnerabilitiesScanReports[contextNameKey]?.let { scanReports ->
+        cachedClusterScanReports[contextNameKey]?.get(scanner)?.let { scanReports ->
             return Pair(scanReports, null)
         }
 
-        return scanKubernetesCluster(contextName ?: kubernetesClient.defaultContext, KubernetesClusterScanner.Vulnerabilities)
+        return scanKubernetesCluster(contextName ?: kubernetesClient.defaultContext, scanner)
     }
 
-    private fun scanKubernetesCluster(contextName: String? = null, scanner: KubernetesClusterScanner): Pair<KubernetesClusterReport?, String?> {
-
+    private fun scanKubernetesCluster(contextName: String? = null, scanner: KubernetesScanner): Pair<KubernetesClusterReport?, String?> {
         val (jsonReport, clusterReport, error) = trivyClient.scanKubernetesCluster(contextName, reportType = ReportType.All, scanners = setOf(scanner))
 
         if (clusterReport != null) {
             val contextNameKey = kubernetesClient.getNonNullContextName(contextName)
-            when (scanner) {
-                KubernetesClusterScanner.Vulnerabilities -> this.cachedClusterVulnerabilitiesScanReports[contextNameKey] = clusterReport
-            }
-            persistClusterState(contextName, scanner, clusterReport)
+            this.cachedClusterScanReports.getOrPut(contextNameKey, { ConcurrentHashMap() })[scanner] = clusterReport
+
+            persistClusterState(contextNameKey, scanner, clusterReport)
         }
 
         return Pair(clusterReport, error)
@@ -93,7 +106,8 @@ class TrivyService(
 
 
     fun getVulnerabilitiesOfImage(imageId: String): Pair<Report?, String?> {
-        val cachedScanReport = cachedClusterVulnerabilitiesScanReports.flatMap { it.value.Resources }
+        val cachedScanReport = cachedClusterScanReports.mapNotNull { it.value[KubernetesScanner.Vulnerabilities] }
+            .flatMap { it.Resources }
             .firstOrNull { it.Metadata?.RepoDigests?.contains(imageId) == true }
         if (cachedScanReport != null) {
             val report = Report(null, null, cachedScanReport.Metadata?.RepoDigests?.firstOrNull(), ArtifactType.ContainerImage.type, cachedScanReport.Metadata, cachedScanReport.Results)
@@ -138,9 +152,8 @@ class TrivyService(
                 val contextName = contextDirectory.name
                 contextDirectory.listFiles()?.forEach { stateFile ->
                     val report = objectMapper.readValue<KubernetesClusterReport>(stateFile)
-                    when (stateFile.nameWithoutExtension) {
-                        KubernetesClusterScanner.Vulnerabilities.name.lowercase() -> this.cachedClusterVulnerabilitiesScanReports[contextName] = report
-                    }
+                    val scanner = KubernetesScanner.valueOf(stateFile.nameWithoutExtension)
+                    this.cachedClusterScanReports.getOrPut(contextName, { ConcurrentHashMap() })[scanner] = report
                 }
             }
         } catch (e: Throwable) {
@@ -148,7 +161,7 @@ class TrivyService(
         }
     }
 
-    private fun persistClusterState(contextName: String?, scanner: KubernetesClusterScanner, report: KubernetesClusterReport) {
+    private fun persistClusterState(contextName: String, scanner: KubernetesScanner, report: KubernetesClusterReport) {
         try {
             val outputFile = getClusterStateFile(contextName, scanner)
 
@@ -158,11 +171,11 @@ class TrivyService(
         }
     }
 
-    private fun getClusterStateFile(contextName: String?, scanner: KubernetesClusterScanner) =
+    private fun getClusterStateFile(contextName: String, scanner: KubernetesScanner) =
         File(getClusterStateDirectory(contextName), "${scanner.name.lowercase()}.json")
 
-    private fun getClusterStateDirectory(contextName: String?) =
-        File(getKubernetesStateDirectory(), kubernetesClient.getNonNullContextName(contextName)).also {
+    private fun getClusterStateDirectory(contextName: String) =
+        File(getKubernetesStateDirectory(), contextName).also {
             it.mkdirs()
         }
 
