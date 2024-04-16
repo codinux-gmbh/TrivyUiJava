@@ -30,11 +30,15 @@ class TrivyResource(
 
     @GET
     @Path("/kubernetes/secrets")
-    fun getKubernetesClusterExposedSecrets(@RestQuery("context") context: String? = null): VulnerabilitiesScanReport {
+    fun getKubernetesClusterExposedSecrets(@RestQuery("context") context: String? = null): Response {
         val start = Instant.now()
         val (report, error) = service.getKubernetesClusterExposedSecrets(context)
 
-        return mapper.mapToVulnerabilitiesScanReport(context, start, report, error)
+        if (report != null) {
+            return Response.ok(mapper.mapToSecretsScanReport(context, start, report)).build()
+        }
+
+        return Response.status(Response.Status.BAD_GATEWAY.statusCode, error).build()
     }
 
     @GET

@@ -1,10 +1,7 @@
 package net.codinux.trivy.api.mapper
 
 import jakarta.inject.Singleton
-import net.codinux.trivy.api.dto.MisconfigurationScanReport
-import net.codinux.trivy.api.dto.ResourceMisconfigurations
-import net.codinux.trivy.api.dto.ResourceVulnerabilitiesSummary
-import net.codinux.trivy.api.dto.VulnerabilitiesScanReport
+import net.codinux.trivy.api.dto.*
 import net.codinux.trivy.report.*
 import java.time.Instant
 
@@ -25,19 +22,10 @@ class TrivyDtoMapper {
     }
 
     private fun mapToResourceVulnerabilitiesSummary(resource: Resource): ResourceVulnerabilitiesSummary {
-        val imageId = resource.Metadata?.RepoDigests?.firstOrNull()
-        var imageName = imageId ?: ""
-        val indexOfAt = imageName.indexOf('@')
-        if (indexOfAt > -1) {
-            imageName = imageName.substring(0, indexOfAt)
-        }
-        val indexOfColon = imageName.indexOf(':')
-        if (indexOfColon > -1) {
-            imageName = imageName.substring(0, indexOfColon)
-        }
+        val (imageId, imageTags) = getImageIdAndTags(resource)
 
         return ResourceVulnerabilitiesSummary(
-            resource.Namespace, resource.Kind, resource.Name, imageId, resource.Metadata?.RepoTags.orEmpty().map { it.replace("${imageName}:", "") }, null,
+            resource.Namespace, resource.Kind, resource.Name, imageId, imageTags, null,
             countSeverity(resource, Severity.Critical), countSeverity(resource, Severity.High), countSeverity(resource, Severity.Medium), countSeverity(resource, Severity.Low)
         )
     }
@@ -47,6 +35,29 @@ class TrivyDtoMapper {
 
     private fun countSeverity(results: List<Result>?, severity: Severity): Int =
         results?.sumOf { it.Vulnerabilities.count { it.Severity == severity.severity } }
+            ?: 0
+
+
+
+    fun mapToSecretsScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport): SecretsScanReport {
+        val resourceSecretsScanSummaries = report.Resources.map { resource ->
+            val (imageId, imageTags) = getImageIdAndTags(resource)
+            val detectedSecrets = resource.Results.flatMap { it.Secrets }
+
+            ResourceSecretsScanSummary(resource.Namespace, resource.Kind, resource.Name, imageId, imageTags,
+                countSecretSeverity(detectedSecrets, Severity.Critical), countSecretSeverity(detectedSecrets, Severity.High),
+                countSecretSeverity(detectedSecrets, Severity.Medium), countSecretSeverity(detectedSecrets, Severity.Low))
+        }
+
+        return SecretsScanReport(context, report.Resources.size,
+            resourceSecretsScanSummaries.sumOf { it.countCriticalSeverities }, resourceSecretsScanSummaries.sumOf { it.countHighSeverities },
+            resourceSecretsScanSummaries.sumOf { it.countMediumSeverities }, resourceSecretsScanSummaries.sumOf { it.countLowSeverities },
+            resourceSecretsScanSummaries.sortedWith(compareBy( { it.namespace }, { it.kind }, { it.name } )) // TODO: it's not the backend's job to sort resources
+        )
+    }
+
+    private fun countSecretSeverity(secrets: List<DetectedSecret>?, severity: Severity): Int =
+        secrets?.count { it.Severity == severity.severity }
             ?: 0
 
 
@@ -63,6 +74,22 @@ class TrivyDtoMapper {
             resourceMisconfigurations.sumOf { it.failures }, resourceMisconfigurations.sumOf { it.exceptions },
             resourceMisconfigurations.sortedWith(compareBy( { it.namespace }, { it.kind }, { it.name } )) // TODO: it's not the backend's job to sort resources
         )
+    }
+
+
+    private fun getImageIdAndTags(resource: Resource): Pair<String?, List<String>> {
+        val imageId = resource.Metadata?.RepoDigests?.firstOrNull()
+        var imageName = imageId ?: ""
+        val indexOfAt = imageName.indexOf('@')
+        if (indexOfAt > -1) {
+            imageName = imageName.substring(0, indexOfAt)
+        }
+        val indexOfColon = imageName.indexOf(':')
+        if (indexOfColon > -1) {
+            imageName = imageName.substring(0, indexOfColon)
+        }
+
+        return Pair(imageId, resource.Metadata?.RepoTags.orEmpty().map { it.replace("${imageName}:", "") })
     }
 
 }
