@@ -6,5 +6,5 @@ data class RootFS(
     val type: String,
     @JsonProperty("diff_ids")
     //val diffIds: List<Hash>
-    val diffIds: List<String>
+    val diffIds: List<String>? = null
 )

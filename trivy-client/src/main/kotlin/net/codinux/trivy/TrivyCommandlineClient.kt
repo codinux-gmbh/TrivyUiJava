@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.codinux.log.logger
 import net.codinux.trivy.json.DefaultObjectMapper
+import net.codinux.trivy.report.KubernetesClusterReport
 import net.codinux.trivy.report.Report
 import java.io.File
 import kotlin.concurrent.thread
@@ -23,6 +24,53 @@ class TrivyCommandlineClient(
             "trivy", "image", "--format", outputFormat.format, "--report", reportType.type, "--scanners", scanners.joinToString(",") { it.scanner }, imageName
         )
     }
+
+    // additional options:
+
+    // Kubernetes Flags:
+    // --components strings                specify which components to scan (workload,infra) (default [workload,infra])
+
+    // Report flags:
+    // --compliance string          compliance report to generate (k8s-nsa,k8s-cis,k8s-pss-baseline,k8s-pss-restricted)
+    // --dependency-tree            [EXPERIMENTAL] show dependency origin tree of vulnerable packages
+    // -s, --severity strings           severities of security issues to be displayed (UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL) (default [UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL])
+    // -t, --template string            output template
+
+    // Vulnerability Flags:
+    // --ignore-status strings   comma-separated list of vulnerability status to ignore (unknown,not_affected,affected,fixed,under_investigation,will_not_fix,fix_deferred,end_of_life)
+    // --ignore-unfixed          display only fixed vulnerabilities
+
+    // Misconfiguration Flags:
+    // --include-non-failures              include successes and exceptions, available with '--scanners misconfig'
+    override fun scanKubernetesCluster(contextName: String?, namespace: String?, scanAllNamespaces: Boolean, reportType: ReportType, outputFormat: OutputFormat, listAllPackages: Boolean, scanners: Collection<KubernetesClusterScanner>): Triple<String?, KubernetesClusterReport?, String?> {
+        "trivy k8s cluster --scanners vuln --report all -f json --output trivy-client/src/main/doc/responses/staging_cluster_vulnerabilities.json"
+
+        val command = buildList {
+            addAll(listOf("trivy", "kubernetes", "cluster", "--format", outputFormat.format, "--report", reportType.type, "--scanners", scanners.joinToString(",") { it.scanner }, "--timeout", "60m"))
+
+            if (contextName != null) {
+                addAll(listOf("--context", contextName))
+            }
+            if (namespace != null) {
+                addAll(listOf("--namespace", namespace))
+            }
+            if (scanAllNamespaces) {
+                add("--all-namespaces")
+            }
+            if (listAllPackages) {
+                add("--list-all-pkgs")
+            }
+        }
+
+        val (jsonReport, error) = executeCommandIncludingErrorOutput("Could not retrieve vulnerabilities of Kubernetes cluster '$contextName'", *command.toTypedArray())
+
+        return if (jsonReport != null) {
+            Triple(jsonReport, objectMapper.readValue<KubernetesClusterReport>(jsonReport), error)
+        } else {
+            Triple(null, null, error)
+        }
+    }
+
 
     override fun deserializeJsonReport(jsonReport: String): Report? = try {
         objectMapper.readValue<Report>(jsonReport)

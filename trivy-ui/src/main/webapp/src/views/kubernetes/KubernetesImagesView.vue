@@ -10,13 +10,15 @@ interface ScanReport {
   countHighVulnerabilities: number,
   countMediumVulnerabilities: number,
   countLowVulnerabilities: number,
-  images: [ImageVulnerabilitiesSummary]
+  resources: [ResourceVulnerabilitiesSummary]
 }
 
-interface ImageVulnerabilitiesSummary {
+interface ResourceVulnerabilitiesSummary {
   namespace?: string,
+  kind: string,
   name: string,
-  imageId: string,
+  imageId?: string,
+  imageTags: [string],
   scanner: string,
   countCriticalVulnerabilities: number,
   countHighVulnerabilities: number,
@@ -33,9 +35,11 @@ function fetchScanReport() {
       .then(json => scanReport.value = json)
 }
 
-function showImageScanReport(image: ImageVulnerabilitiesSummary) {
-  const imageId = encodeURIComponent(image.imageId)
-  router.push(`/images/${imageId}/vulnerabilities`)
+function showImageScanReport(resource: ResourceVulnerabilitiesSummary) {
+  if (resource.imageId) {
+    const imageId = encodeURIComponent(resource.imageId!!)
+    router.push(`/images/${imageId}/vulnerabilities`)
+  }
 }
 
 fetchScanReport()
@@ -62,8 +66,10 @@ fetchScanReport()
     <div class="table table-auto w-full bg-white text-xs sm:text-sm text-zinc-700 bg-clip-border">
       <div class="table-header-group bg-zinc-200 text-zinc-500 border-b border-zinc-500">
         <div class="table-row">
+          <div class="table-cell max-w-[11rem]">Namespace</div>
           <div class="table-cell max-w-[20rem]">Name</div>
-          <div class="table-cell max-w-[48rem]">Image</div>
+          <div class="table-cell max-w-[30rem]">Image</div>
+          <div class="table-cell max-w-[20rem]">Tags</div>
           <div class="table-cell !text-center">Critical</div>
           <div class="table-cell !text-center">High</div>
           <div class="table-cell !text-center">Medium</div>
@@ -71,10 +77,12 @@ fetchScanReport()
         </div>
       </div>
       <div class="table-row-group">
-        <div v-for="image in scanReport.images" class="table-row border-b first:border-t border-zinc-200 even:bg-zinc-100/50 lg:hover:bg-zinc-200 cursor-pointer"
+        <div v-for="image in scanReport.resources" class="table-row border-b first:border-t border-zinc-200 even:bg-zinc-100/50 lg:hover:bg-zinc-200 cursor-pointer"
              @click="showImageScanReport(image)">
+          <div class="table-cell max-w-[11rem] truncate">{{ image.namespace }}</div>
           <div class="table-cell max-w-[20rem] truncate">{{ image.name }}</div>
-          <div class="table-cell max-w-[48rem] truncate">{{ image.imageId }}</div>
+          <div class="table-cell max-w-[30rem] truncate">{{ image.imageId }}</div>
+          <div class="table-cell max-w-[20rem] truncate">{{ image.imageTags.join(", ") }}</div>
           <div class="table-cell !text-center">{{ image.countCriticalVulnerabilities }}</div>
           <div class="table-cell !text-center">{{ image.countHighVulnerabilities }}</div>
           <div class="table-cell !text-center">{{ image.countMediumVulnerabilities }}</div>

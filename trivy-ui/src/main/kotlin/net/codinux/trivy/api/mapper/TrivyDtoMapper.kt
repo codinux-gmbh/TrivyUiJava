@@ -1,39 +1,50 @@
 package net.codinux.trivy.api.mapper
 
 import jakarta.inject.Singleton
-import net.codinux.trivy.api.dto.ImageVulnerabilitiesSummary
+import net.codinux.trivy.api.dto.ResourceVulnerabilitiesSummary
 import net.codinux.trivy.api.dto.ScanReport
-import net.codinux.trivy.report.Report
-import net.codinux.trivy.report.Severity
+import net.codinux.trivy.report.*
 import java.time.Instant
 
 @Singleton
 class TrivyDtoMapper {
 
-    fun mapToScanReport(context: String?, startTime: Instant, scanReports: List<net.codinux.trivy.ScanReport>): ScanReport {
-        val reports = scanReports.mapNotNull { it.report }
+    fun mapToScanReport(context: String?, startTime: Instant, report: KubernetesClusterReport?, error: String?): ScanReport {
+        return if (report == null) {
+            ScanReport(context, startTime, 0, 0, 0, 0, 0, emptyList(), error)
+        } else {
+            val results = report.Resources.flatMap { it.Results }
 
-        return ScanReport(context, startTime, scanReports.size, countSeverity(reports, Severity.Critical),
-            countSeverity(reports, Severity.High), countSeverity(reports, Severity.Medium), countSeverity(reports, Severity.Low),
-            scanReports.map { mapToImageVulnerabilitiesOverview(it) }
+            return ScanReport(context, startTime, results.size, countSeverity(results, Severity.Critical),
+                countSeverity(results, Severity.High), countSeverity(results, Severity.Medium), countSeverity(results, Severity.Low),
+                report.Resources.map { mapToResourceVulnerabilitiesSummary(it) }.sortedWith(compareBy( { it.namespace }, { it.kind }, { it.name } )) // TODO: it's not the backend's job to sort resources
+            )
+        }
+    }
+
+    private fun mapToResourceVulnerabilitiesSummary(resource: Resource): ResourceVulnerabilitiesSummary {
+        val imageId = resource.Metadata?.RepoDigests?.firstOrNull()
+        var imageName = imageId ?: ""
+        val indexOfAt = imageName.indexOf('@')
+        if (indexOfAt > -1) {
+            imageName = imageName.substring(0, indexOfAt)
+        }
+        val indexOfColon = imageName.indexOf(':')
+        if (indexOfColon > -1) {
+            imageName = imageName.substring(0, indexOfColon)
+        }
+
+        return ResourceVulnerabilitiesSummary(
+            resource.Namespace, resource.Kind, resource.Name, imageId, resource.Metadata?.RepoTags.orEmpty().map { it.replace("${imageName}:", "") }, null,
+            countSeverity(resource, Severity.Critical), countSeverity(resource, Severity.High), countSeverity(resource, Severity.Medium), countSeverity(resource, Severity.Low)
         )
     }
 
-    private fun mapToImageVulnerabilitiesOverview(imageToReport: net.codinux.trivy.ScanReport): ImageVulnerabilitiesSummary {
-        val image = imageToReport.image
-        val report = imageToReport.report
+    private fun countSeverity(resource: Resource, severity: Severity): Int =
+        countSeverity(resource.Results, severity)
 
-        return ImageVulnerabilitiesSummary(
-            "", image.imageName, image.imageId, "",
-            countSeverity(report, Severity.Critical), countSeverity(report, Severity.High), countSeverity(report, Severity.Medium), countSeverity(report, Severity.Low)
-        )
-    }
-
-    private fun countSeverity(reports: List<Report>, severity: Severity): Int =
-        reports.sumOf { countSeverity(it, severity) }
-
-    private fun countSeverity(report: Report?, severity: Severity): Int =
-        report?.Results?.sumOf { it.Vulnerabilities.sumOf { it.VendorSeverity.entries.filter { it.value == severity }.size } }
+    private fun countSeverity(results: List<Result>?, severity: Severity): Int =
+        results?.sumOf { it.Vulnerabilities.count { it.Severity == severity.severity } }
             ?: 0
 
 }

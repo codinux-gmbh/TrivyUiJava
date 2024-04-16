@@ -20,11 +20,11 @@ class TrivyResource(
 
     @GET
     @Path("/kubernetes/vulnerabilities")
-    fun getAllImageVulnerabilitiesOfKubernetesCluster(@RestQuery("context") context: String? = null): ScanReport {
+    fun getKubernetesClusterVulnerabilities(@RestQuery("context") context: String? = null): ScanReport {
         val start = Instant.now()
-        val scanReports = service.getAllImageVulnerabilitiesOfKubernetesCluster(context)
+        val (report, error) = service.getKubernetesClusterVulnerabilities(context)
 
-        return mapper.mapToScanReport(context, start, scanReports)
+        return mapper.mapToScanReport(context, start, report, error)
     }
 
     @GET

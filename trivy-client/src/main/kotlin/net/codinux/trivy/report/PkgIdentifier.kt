@@ -2,7 +2,7 @@ package net.codinux.trivy.report
 
 data class PkgIdentifier(
 //    val PURL: PackageURL,
-    val PURL: String,
+    val PURL: String? = null,
     val BOMRef: String? = null
 )
 

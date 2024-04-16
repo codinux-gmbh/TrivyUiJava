@@ -28,7 +28,7 @@ fetchScanReport()
 
   <div v-if="reportResponse?.report">
 
-    <div class="table table-auto w-full bg-white text-xs sm:text-sm text-zinc-700 bg-clip-border">
+    <div class="table table-auto w-full mb-4 bg-white text-xs sm:text-sm text-zinc-700 bg-clip-border">
       <div class="table-header-group bg-zinc-200 text-zinc-500 border-b border-zinc-500">
         <div class="table-row">
           <div class="table-cell">Vulnerability ID</div>

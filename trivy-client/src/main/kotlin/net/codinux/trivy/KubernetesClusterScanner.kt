@@ -1,8 +1,8 @@
 package net.codinux.trivy
 
-enum class Scanner(val scanner: String) {
+enum class KubernetesClusterScanner(val scanner: String) {
     Vulnerabilities("vuln"),
     Misconfiguration("misconfig"),
     Secrets("secret"),
-    License("license")
+    RBAC("rbac")
 }

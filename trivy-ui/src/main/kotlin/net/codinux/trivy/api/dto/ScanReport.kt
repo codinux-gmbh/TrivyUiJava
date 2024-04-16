@@ -10,5 +10,6 @@ data class ScanReport(
     val countHighVulnerabilities: Int,
     val countMediumVulnerabilities: Int,
     val countLowVulnerabilities: Int,
-    val images: List<ImageVulnerabilitiesSummary>
+    val resources: List<ResourceVulnerabilitiesSummary>,
+    val error: String? = null
 )
